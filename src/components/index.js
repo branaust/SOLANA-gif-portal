@@ -1,26 +1,25 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import twitterLogo from "../assets/twitter-logo.svg";
 import useWindowEvent from "../hooks/useWindowEvent";
 import "../App.css";
 import { AuthContext } from "../contexts/AuthProvider";
 import ConnectedContainer from "./ConnectedContainer";
 import ConnectWalletButton from "./ConnectWalletButton";
+import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Program, Provider, web3 } from "@project-serum/anchor";
+
+import idl from "../idl.json";
+
+const { SystemProgram, Keypair } = web3;
+
+let baseAccount = Keypair.generate();
+const programID = new PublicKey(idl.metadata.address);
+const network = clusterApiUrl("devnet");
+const opts = { preflightCommitment: "processed" };
 
 // Constants
 const TWITTER_HANDLE = "_buildspace";
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
-
-const TEST_GIFS = [
-  "https://media.giphy.com/media/o6OA5LLKQk5ltBxNq5/giphy.gif",
-  "https://media.giphy.com/media/Jo1TR2bsqRH3I7FNFk/giphy.gif",
-  "https://media.giphy.com/media/fRhMTh9LuhlLSIyZLf/giphy.gif",
-  "https://media.giphy.com/media/MBax1Nf7osivL1B0yc/giphy.gif",
-  "https://media.giphy.com/media/OGtyRv7TNQHcVTIncb/giphy.gif",
-  "https://media.giphy.com/media/QsPCsPiknQrWU/giphy.gif",
-  "https://media.giphy.com/media/F1ZjBJBmzdJYXhYDAb/giphy.gif",
-  "https://media.giphy.com/media/3c9GcxCpDoP6jVW3xU/giphy.gif",
-  "https://media.giphy.com/media/hQpO8jEWvyBlzOFIFQ/giphy.gif",
-];
 
 const Main = () => {
   const [inputValue, setInputValue] = useState("");
@@ -46,12 +45,61 @@ const Main = () => {
     }
   };
 
+  const getProvider = () => {
+    const connection = new Connection(network, opts.preflightCommitment);
+    const provider = new Provider(
+      connection,
+      window.solana,
+      opts.preflightCommitment
+    );
+    return provider;
+  };
+
+  const createGifAccount = async () => {
+    try {
+      const provider = getProvider();
+      const program = new Program(idl, programID, provider);
+      console.log("pong");
+      await program.rpc.startStuffOff({
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [baseAccount],
+      });
+      console.log(
+        "Created a new BaseAccount w/ address:",
+        baseAccount.publicKey.toString()
+      );
+      await getGifList();
+    } catch (err) {
+      console.error("Error creating BaseAccount account: ", err);
+    }
+  };
+
+  const getGifList = useCallback( async () => {
+    try {
+      const provider = getProvider();
+      const program = new Program(idl, programID, provider);
+      const account = await program.account.baseAccount.fetch(
+        baseAccount.publicKey
+      );
+
+      console.log("Got the account", account);
+      setGifList(account.gifList);
+    } catch (error) {
+      console.log("Error in getGifList: ", error);
+      setGifList(null);
+    }
+  }, [])
+
   useEffect(() => {
     if (walletAddress) {
       console.log("Fetching GIF list...");
-      setGifList(TEST_GIFS);
+      getGifList();
     }
-  }, [walletAddress]);
+  }, [getGifList, walletAddress]);
 
   useWindowEvent("load", checkIfWalletIsConnected);
 
@@ -69,6 +117,7 @@ const Main = () => {
               setInputValue={setInputValue}
               inputValue={inputValue}
               gifList={gifList}
+              createGifAccount={createGifAccount}
             />
           )}
         </div>

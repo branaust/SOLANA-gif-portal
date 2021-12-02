@@ -1,7 +1,12 @@
 import React from "react";
 import "../App.css";
 
-const ConnectedContainer = ({ gifList, inputValue, setInputValue }) => {
+const ConnectedContainer = ({
+  createGifAccount,
+  gifList,
+  inputValue,
+  setInputValue,
+}) => {
   const sendGif = async () => {
     if (inputValue.length > 0) {
       console.log("Gif link:", inputValue);
@@ -18,7 +23,16 @@ const ConnectedContainer = ({ gifList, inputValue, setInputValue }) => {
     e.preventDefault();
     sendGif();
   };
-  return (
+  return !gifList ? (
+    <div className="connected-container">
+      <button
+        className="cta-button submit-gif-button"
+        onClick={createGifAccount}
+      >
+        Do One-Time Initialization For GIF Program Account
+      </button>
+    </div>
+  ) : (
     <div className="connected-container">
       <form onSubmit={handleSubmit}>
         <input
