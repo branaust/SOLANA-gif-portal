@@ -1,3 +1,4 @@
+import { getProvider, Program } from "@project-serum/anchor";
 import React from "react";
 import "../App.css";
 
@@ -6,14 +7,9 @@ const ConnectedContainer = ({
   gifList,
   inputValue,
   setInputValue,
+  sendGif
 }) => {
-  const sendGif = async () => {
-    if (inputValue.length > 0) {
-      console.log("Gif link:", inputValue);
-    } else {
-      console.log("Empty input. Try again.");
-    }
-  };
+
 
   const handleChange = (e) => {
     setInputValue(e.target.value);
@@ -48,7 +44,7 @@ const ConnectedContainer = ({
       <div className="gif-grid">
         {gifList.map((gif) => (
           <div className="gif-item" key={gif}>
-            <img src={gif} alt={gif} />
+            <img src={gif.gifLink} alt={gif} />
           </div>
         ))}
       </div>

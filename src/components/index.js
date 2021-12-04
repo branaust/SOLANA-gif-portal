@@ -94,6 +94,30 @@ const Main = () => {
     }
   }, [])
 
+  const sendGif = async () => {
+    if (inputValue.length === 0) {
+      console.log("No gif link given!");
+      return;
+    }
+    setInputValue("");
+    console.log("Gif Link:", inputValue);
+    try {
+      const provider = getProvider();
+      const program = new Program(idl, programID, provider);
+
+      await program.rpc.addGif(inputValue, {
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+        },
+      });
+      console.log("GIF successfully sent to program", inputValue);
+      await getGifList();
+    } catch (err) {
+      console.log("Error sending GIF: ", err);
+    }
+  };
+
   useEffect(() => {
     if (walletAddress) {
       console.log("Fetching GIF list...");
@@ -115,6 +139,7 @@ const Main = () => {
           {walletAddress && (
             <ConnectedContainer
               setInputValue={setInputValue}
+              sendGif={sendGif}
               inputValue={inputValue}
               gifList={gifList}
               createGifAccount={createGifAccount}
